@@ -1,0 +1,85 @@
+#!/bin/bash
+# The MIT License (MIT)
+#
+# Copyright (c) 2022 Jesper Pedersen <jesper.pedersen@redhat.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the Software
+# is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+# PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+
+NODE_EXPORTER_PIDFILE=/tmp/node_exporter.pid
+
+function trap_sigterm() {
+    kill -SIGINT $(head -1 $NODE_EXPORTER_PIDFILE)
+}
+
+trap 'trap_sigterm' SIGINT SIGTERM
+
+if [ ! -f /pgdata/PG_VERSION ]; then
+    export PG_MAX_CONNECTIONS=${PG_MAX_CONNECTIONS:-100}
+    export PG_SHARED_BUFFERS=${PG_SHARED_BUFFERS:-256}
+    export PG_WORK_MEM=${PG_WORK_MEM:-8}
+    export PG_MAX_PARALLEL_WORKERS=${PG_MAX_PARALLEL_WORKERS:-8}
+    export PG_EFFECTIVE_CACHE_SIZE=${PG_EFFECTIVE_CACHE_SIZE:-1}
+    export PG_MAX_WAL_SIZE=${PG_MAX_WAL_SIZE:-1}
+    export PG_PASSWORD_ENCRYPTION=${PG_PASSWORD_ENCRYPTION:-scram-sha-256}
+
+    export PG_DATABASE=${PG_DATABASE}
+    export PG_DATABASE_ENCODING=${PG_DATABASE_ENCODING:-UTF8}
+    export PG_USER_NAME=${PG_USER_NAME}
+    export PG_USER_PASSWORD=${PG_USER_PASSWORD}
+    export PG_NETWORK_MASK=${PG_NETWORK_MASK}
+
+    if [ -z "${PG_DATABASE}" ] ||
+       [ -z "${PG_USER_NAME}" ] || [ -z "${PG_USER_PASSWORD}" ] ||
+       [ -z "${PG_NETWORK_MASK}" ]; then
+        echo "PG_DATABASE, PG_USER_NAME, PG_USER_PASSWORD and PG_NETWORK_MASK needs to be defined."
+        exit 1
+    fi
+    
+    /usr/pgsql-14/bin/initdb -k -X /pgwal/ /pgdata/
+
+    sed -i "s/PG_MAX_CONNECTIONS/$PG_MAX_CONNECTIONS/g" /conf/postgresql.conf
+    sed -i "s/PG_SHARED_BUFFERS/$PG_SHARED_BUFFERS/g" /conf/postgresql.conf
+    sed -i "s/PG_WORK_MEM/$PG_WORK_MEM/g" /conf/postgresql.conf
+    sed -i "s/PG_MAX_PARALLEL_WORKERS/$PG_MAX_PARALLEL_WORKERS/g" /conf/postgresql.conf
+    sed -i "s/PG_EFFECTIVE_CACHE_SIZE/$PG_EFFECTIVE_CACHE_SIZE/g" /conf/postgresql.conf
+    sed -i "s/PG_MAX_WAL_SIZE/$PG_MAX_WAL_SIZE/g" /conf/postgresql.conf
+    sed -i "s/PG_PASSWORD_ENCRYPTION/$PG_PASSWORD_ENCRYPTION/g" /conf/postgresql.conf
+
+    sed -i "s/PG_DATABASE/$PG_DATABASE/g" /conf/pg_hba.conf
+    sed -i "s/PG_USER_NAME/$PG_USER_NAME/g" /conf/pg_hba.conf
+    sed -i "s/PG_NETWORK_MASK/$PG_NETWORK_MASK/g" /conf/pg_hba.conf
+    sed -i "s/PG_PASSWORD_ENCRYPTION/$PG_PASSWORD_ENCRYPTION/g" /conf/pg_hba.conf
+
+    cp /conf/postgresql.conf /pgdata/
+    cp /conf/pg_hba.conf /pgdata/
+
+    sed -i "s/PG_DATABASE_ENCODING/$PG_DATABASE_ENCODING/g" /conf/setup.sql
+    sed -i "s/PG_DATABASE/$PG_DATABASE/g" /conf/setup.sql
+    sed -i "s/PG_USER_NAME/$PG_USER_NAME/g" /conf/setup.sql
+    sed -i "s/PG_USER_PASSWORD/$PG_USER_PASSWORD/g" /conf/setup.sql
+
+    /usr/pgsql-14/bin/pg_ctl -D /pgdata/ start
+    /usr/pgsql-14/bin/psql -q -f /conf/setup.sql postgres
+    /usr/pgsql-14/bin/pg_ctl -D /pgdata/ stop
+fi
+
+/usr/local/bin/node_exporter >> /tmp/node_exporter.log 2>&1 &
+echo $! > $NODE_EXPORTER_PIDFILE
+
+exec /usr/pgsql-14/bin/postgres -D /pgdata/ "$@"
