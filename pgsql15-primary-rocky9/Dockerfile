@@ -19,24 +19,24 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
-# pgsql14-primary-rocky9
+# pgsql15-primary-rocky9
 FROM rockylinux:9
 
 LABEL maintainer="Jesper Pedersen <jesper.pedersen@redhat.com>"
 
-LABEL summary="PostgreSQL 14 Primary" \
-      description="PostgreSQL 14 Primary"
+LABEL summary="PostgreSQL 15 Primary" \
+      description="PostgreSQL 15 Primary"
 
 # COPY conf/licenses /licenses
 
-ENV PGVERSION="14"
+ENV PGVERSION="15"
 ENV PGROOT="/usr/pgsql-${PGVERSION}"
 
 RUN rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
  && rpm -Uvh https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
  && dnf -y update \
  && dnf -y install wget \
- && dnf -y install postgresql14 postgresql14-server postgresql14-contrib postgresql14-libs \
+ && dnf -y install postgresql15 postgresql15-server postgresql15-contrib postgresql15-libs \
  && dnf -y clean all
 
 COPY root/ /
@@ -48,10 +48,10 @@ RUN chmod 700 /conf /pgconf /pgdata /pgwal
 
 RUN mkdir -p /usr/local/bin
 RUN cd /tmp \
- && wget https://github.com/prometheus/node_exporter/releases/download/v1.3.1/node_exporter-1.3.1.linux-amd64.tar.gz \
- && tar xzf node_exporter-1.3.1.linux-amd64.tar.gz \
- && mv node_exporter-1.3.1.linux-amd64/node_exporter /usr/local/bin/node_exporter \
- && rm -Rf node_exporter-1.3.1.linux-amd64 node_exporter-1.3.1.linux-amd64.tar.gz \
+ && wget https://github.com/prometheus/node_exporter/releases/download/v1.4.0/node_exporter-1.4.0.linux-amd64.tar.gz \
+ && tar xzf node_exporter-1.4.0.linux-amd64.tar.gz \
+ && mv node_exporter-1.4.0.linux-amd64/node_exporter /usr/local/bin/node_exporter \
+ && rm -Rf node_exporter-1.4.0.linux-amd64 node_exporter-1.4.0.linux-amd64.tar.gz \
  && chown postgres:postgres /usr/local/bin/node_exporter
 
 VOLUME ["/pgconf", "/pgdata", "/pgwal"]

@@ -51,7 +51,7 @@ if [ ! -f /pgdata/PG_VERSION ]; then
         exit 1
     fi
     
-    /usr/pgsql-14/bin/initdb -k -X /pgwal/ /pgdata/
+    /usr/pgsql-15/bin/initdb -k -X /pgwal/ /pgdata/
 
     sed -i "s/PG_MAX_CONNECTIONS/$PG_MAX_CONNECTIONS/g" /conf/postgresql.conf
     sed -i "s/PG_SHARED_BUFFERS/$PG_SHARED_BUFFERS/g" /conf/postgresql.conf
@@ -74,12 +74,12 @@ if [ ! -f /pgdata/PG_VERSION ]; then
     sed -i "s/PG_USER_NAME/$PG_USER_NAME/g" /conf/setup.sql
     sed -i "s/PG_USER_PASSWORD/$PG_USER_PASSWORD/g" /conf/setup.sql
 
-    /usr/pgsql-14/bin/pg_ctl -D /pgdata/ start
-    /usr/pgsql-14/bin/psql -q -f /conf/setup.sql postgres
-    /usr/pgsql-14/bin/pg_ctl -D /pgdata/ stop
+    /usr/pgsql-15/bin/pg_ctl -D /pgdata/ start
+    /usr/pgsql-15/bin/psql -q -f /conf/setup.sql postgres
+    /usr/pgsql-15/bin/pg_ctl -D /pgdata/ stop
 fi
 
 /usr/local/bin/node_exporter >> /tmp/node_exporter.log 2>&1 &
 echo $! > $NODE_EXPORTER_PIDFILE
 
-exec /usr/pgsql-14/bin/postgres -D /pgdata/ "$@"
+exec /usr/pgsql-15/bin/postgres -D /pgdata/ "$@"
