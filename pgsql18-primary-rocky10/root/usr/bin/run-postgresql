@@ -51,35 +51,35 @@ if [ ! -f /pgdata/PG_VERSION ]; then
         exit 1
     fi
     
-    /usr/pgsql-15/bin/initdb -k -X /pgwal/ /pgdata/
+    /usr/pgsql-18/bin/initdb -k -X /pgwal/ -D /pgdata/ --locale-provider=icu --icu-locale=en-US
 
-    sed -i "s/PG_MAX_CONNECTIONS/$PG_MAX_CONNECTIONS/g" /conf/postgresql.conf
-    sed -i "s/PG_SHARED_BUFFERS/$PG_SHARED_BUFFERS/g" /conf/postgresql.conf
-    sed -i "s/PG_WORK_MEM/$PG_WORK_MEM/g" /conf/postgresql.conf
-    sed -i "s/PG_MAX_PARALLEL_WORKERS/$PG_MAX_PARALLEL_WORKERS/g" /conf/postgresql.conf
-    sed -i "s/PG_EFFECTIVE_CACHE_SIZE/$PG_EFFECTIVE_CACHE_SIZE/g" /conf/postgresql.conf
-    sed -i "s/PG_MAX_WAL_SIZE/$PG_MAX_WAL_SIZE/g" /conf/postgresql.conf
-    sed -i "s/PG_PASSWORD_ENCRYPTION/$PG_PASSWORD_ENCRYPTION/g" /conf/postgresql.conf
+    sed -i "s|PG_MAX_CONNECTIONS|$PG_MAX_CONNECTIONS|g" /conf/postgresql.conf
+    sed -i "s|PG_SHARED_BUFFERS|$PG_SHARED_BUFFERS|g" /conf/postgresql.conf
+    sed -i "s|PG_WORK_MEM|$PG_WORK_MEM|g" /conf/postgresql.conf
+    sed -i "s|PG_MAX_PARALLEL_WORKERS|$PG_MAX_PARALLEL_WORKERS|g" /conf/postgresql.conf
+    sed -i "s|PG_EFFECTIVE_CACHE_SIZE|$PG_EFFECTIVE_CACHE_SIZE|g" /conf/postgresql.conf
+    sed -i "s|PG_MAX_WAL_SIZE|$PG_MAX_WAL_SIZE|g" /conf/postgresql.conf
+    sed -i "s|PG_PASSWORD_ENCRYPTION|$PG_PASSWORD_ENCRYPTION|g" /conf/postgresql.conf
 
-    sed -i "s/PG_DATABASE/$PG_DATABASE/g" /conf/pg_hba.conf
-    sed -i "s/PG_USER_NAME/$PG_USER_NAME/g" /conf/pg_hba.conf
-    sed -i "s/PG_NETWORK_MASK/$PG_NETWORK_MASK/g" /conf/pg_hba.conf
-    sed -i "s/PG_PASSWORD_ENCRYPTION/$PG_PASSWORD_ENCRYPTION/g" /conf/pg_hba.conf
+    sed -i "s|PG_DATABASE|$PG_DATABASE|g" /conf/pg_hba.conf
+    sed -i "s|PG_USER_NAME|$PG_USER_NAME|g" /conf/pg_hba.conf
+    sed -i "s|PG_NETWORK_MASK|$PG_NETWORK_MASK|g" /conf/pg_hba.conf
+    sed -i "s|PG_PASSWORD_ENCRYPTION|$PG_PASSWORD_ENCRYPTION|g" /conf/pg_hba.conf
 
     cp /conf/postgresql.conf /pgdata/
     cp /conf/pg_hba.conf /pgdata/
 
-    sed -i "s/PG_DATABASE_ENCODING/$PG_DATABASE_ENCODING/g" /conf/setup.sql
-    sed -i "s/PG_DATABASE/$PG_DATABASE/g" /conf/setup.sql
-    sed -i "s/PG_USER_NAME/$PG_USER_NAME/g" /conf/setup.sql
-    sed -i "s/PG_USER_PASSWORD/$PG_USER_PASSWORD/g" /conf/setup.sql
+    sed -i "s|PG_DATABASE_ENCODING|$PG_DATABASE_ENCODING|g" /conf/setup.sql
+    sed -i "s|PG_DATABASE|$PG_DATABASE|g" /conf/setup.sql
+    sed -i "s|PG_USER_NAME|$PG_USER_NAME|g" /conf/setup.sql
+    sed -i "s|PG_USER_PASSWORD|$PG_USER_PASSWORD|g" /conf/setup.sql
 
-    /usr/pgsql-15/bin/pg_ctl -D /pgdata/ start
-    /usr/pgsql-15/bin/psql -q -f /conf/setup.sql postgres
-    /usr/pgsql-15/bin/pg_ctl -D /pgdata/ stop
+    /usr/pgsql-18/bin/pg_ctl -D /pgdata/ start
+    /usr/pgsql-18/bin/psql -q -f /conf/setup.sql postgres
+    /usr/pgsql-18/bin/pg_ctl -D /pgdata/ stop
 fi
 
 /usr/local/bin/node_exporter >> /tmp/node_exporter.log 2>&1 &
 echo $! > $NODE_EXPORTER_PIDFILE
 
-exec /usr/pgsql-15/bin/postgres -D /pgdata/ "$@"
+exec /usr/pgsql-18/bin/postgres -D /pgdata/ "$@"

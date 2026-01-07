@@ -19,24 +19,24 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
-# pgsql15-primary-rocky9
-FROM rockylinux:9
+# pgsql18-primary-rocky10
+FROM rockylinux/rockylinux:10
 
 LABEL maintainer="Jesper Pedersen <jesper.pedersen@redhat.com>"
 
-LABEL summary="PostgreSQL 15 Primary" \
-      description="PostgreSQL 15 Primary"
+LABEL summary="PostgreSQL 18 Primary" \
+      description="PostgreSQL 18 Primary"
 
 # COPY conf/licenses /licenses
 
-ENV PGVERSION="15"
+ENV PGVERSION="18"
 ENV PGROOT="/usr/pgsql-${PGVERSION}"
 
-RUN rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
- && rpm -Uvh https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
+RUN rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm \
+ && rpm -Uvh https://download.postgresql.org/pub/repos/yum/reporpms/EL-10-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
  && dnf -y update \
  && dnf -y install wget \
- && dnf -y install postgresql15 postgresql15-server postgresql15-contrib postgresql15-libs \
+ && dnf -y install postgresql18 postgresql18-server postgresql18-contrib postgresql18-libs \
  && dnf -y clean all
 
 COPY root/ /
@@ -45,13 +45,14 @@ RUN mkdir -p /conf /pgconf /pgdata /pgwal
 COPY conf/* /conf/
 RUN chown -R postgres:postgres /conf /pgconf /pgdata /pgwal
 RUN chmod 700 /conf /pgconf /pgdata /pgwal
+RUN chmod +x /usr/bin/run-postgresql 
 
 RUN mkdir -p /usr/local/bin
 RUN cd /tmp \
- && wget https://github.com/prometheus/node_exporter/releases/download/v1.4.0/node_exporter-1.4.0.linux-amd64.tar.gz \
- && tar xzf node_exporter-1.4.0.linux-amd64.tar.gz \
- && mv node_exporter-1.4.0.linux-amd64/node_exporter /usr/local/bin/node_exporter \
- && rm -Rf node_exporter-1.4.0.linux-amd64 node_exporter-1.4.0.linux-amd64.tar.gz \
+ && wget https://github.com/prometheus/node_exporter/releases/download/v1.10.2/node_exporter-1.10.2.linux-amd64.tar.gz \
+ && tar xzf node_exporter-1.10.2.linux-amd64.tar.gz \
+ && mv node_exporter-1.10.2.linux-amd64/node_exporter /usr/local/bin/node_exporter \
+ && rm -Rf node_exporter-1.10.2.linux-amd64 node_exporter-1.10.2.linux-amd64.tar.gz \
  && chown postgres:postgres /usr/local/bin/node_exporter
 
 VOLUME ["/pgconf", "/pgdata", "/pgwal"]
