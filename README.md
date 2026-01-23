@@ -4,8 +4,9 @@ This repository contains [PostgreSQL](https://www.postgresql.org) images for [pg
 
 The images makes use of
 
-* [Rocky Linux](https://www.rockylinux.org) 9
-* [PostgreSQL](https://www.postgresql.org) 15.x
+* [Rocky Linux](https://www.rockylinux.org) 10.x
+* [PostgreSQL](https://www.postgresql.org) 18.x
+* [pgmoneta](https://pgmoneta.github.io)
 * Community provided RPMs through [yum.postgresql.org](https://yum.postgresql.org)
 * Checksum for `PGDATA`
 * SCRAM-SHA256 password encryption by default
@@ -15,4 +16,4 @@ no guarantees of correctness and stability.
 
 ## License
 
-All images are released under the [MIT](https://opensource.org/licenses/MIT) license.
+All images are released under the [Eclipse Public License - v2.0](https://www.eclipse.org/legal/epl-2.0/)
