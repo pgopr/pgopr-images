@@ -16,6 +16,7 @@ psql -h localhost -p 5432 -U myuser mydb
 
 # Shell to postgresql-primary
 podman exec -it postgresql-primary /usr/bin/bash
+```
 
 ## Configuration
 
