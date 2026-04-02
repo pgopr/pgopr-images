@@ -26,7 +26,7 @@ RUN useradd -ms /bin/bash pgmoneta
 COPY root/ /
 RUN chmod +x /usr/bin/run-pgmoneta  
 
-RUN mkdir -p /pgconf /pgmoneta \
+RUN mkdir -p /pgconf /pgmoneta
 COPY conf/* /conf/  
 RUN chown -R pgmoneta:pgmoneta /conf /pgconf /pgmoneta  
 RUN chmod 700 /conf /pgconf /pgmoneta  
