@@ -1,0 +1,64 @@
+#!/bin/bash
+#
+# Eclipse Public License - v 2.0
+#
+# THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF THIS ECLIPSE
+# PUBLIC LICENSE ("AGREEMENT"). ANY USE, REPRODUCTION OR DISTRIBUTION
+# OF THE PROGRAM CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
+#
+
+NODE_EXPORTER_PIDFILE=/tmp/node_exporter.pid
+
+function trap_sigterm() {
+    kill -SIGINT $(head -1 $NODE_EXPORTER_PIDFILE)
+}
+
+trap 'trap_sigterm' SIGINT SIGTERM
+
+if [ ! -f /pgdata/PG_VERSION ]; then
+    export PG_MASTER=${PG_MASTER}
+    export PG_REPLICATION_NAME=${PG_REPLICATION_NAME}
+    export PG_REPLICATION_PASSWORD=${PG_REPLICATION_PASSWORD}
+    export PG_SLOT_NAME=${PG_SLOT_NAME}
+
+    if [ -z "${PG_MASTER}" ] ||
+       [ -z "${PG_REPLICATION_NAME}" ] || [ -z "${PG_REPLICATION_PASSWORD}" ] ||
+       [ -z "${PG_SLOT_NAME}" ]; then
+        echo "PG_MASTER, PG_REPLICATION_NAME, PG_REPLICATION_PASSWORD and PG_SLOT_NAME needs to be defined."
+        exit 1
+    fi
+
+    chown -R postgres:postgres /conf /pgconf /pgdata /pgwal
+    chmod 700 /pgconf /pgdata /pgwal
+
+    PGPASSWORD="$PG_REPLICATION_PASSWORD" /usr/pgsql-18/bin/pg_basebackup -S ${PG_SLOT_NAME} -X stream --no-password -c fast -h ${PG_MASTER} -U ${PG_REPLICATION_NAME} -D /pgdata --waldir=/pgwal
+
+    echo "" >> /pgdata/postgresql.conf
+    echo "#" >> /pgdata/postgresql.conf
+    echo "# REPLICATION INFORMATION" >> /pgdata/postgresql.conf
+    echo "#" >> /pgdata/postgresql.conf
+
+    echo -n "primary_conninfo = 'host=${PG_MASTER} port=5432 user=${PG_REPLICATION_NAME} application_name=${PG_SLOT_NAME} password=${PG_REPLICATION_PASSWORD}" >> /pgdata/postgresql.conf
+
+    if [ -f /pgconf/root.crt ] && [ -f /pgconf/postgresql.crt ] && [ -f /pgconf/postgresql.key ]; then
+        mkdir ~/.postgresql
+        cp /pgconf/root.crt ~/.postgresql
+        cp /pgconf/postgresql.crt ~/.postgresql
+        cp /pgconf/postgresql.key ~/.postgresql
+        chmod 0600 ~/.postgresql/postgresql.key
+
+        echo -n " sslmode=verify-ca" >> /pgdata/postgresql.conf
+    fi
+
+    echo "'" >> /pgdata/postgresql.conf
+
+    echo "primary_slot_name = '${PG_SLOT_NAME}'" >> /pgdata/postgresql.conf
+    echo "promote_trigger_file = '/pgdata/promote.signal'" >> /pgdata/postgresql.conf
+
+    cp /conf/standby.signal /pgdata/
+fi
+
+/usr/local/bin/node_exporter >> /tmp/node_exporter.log 2>&1 &
+echo $! > $NODE_EXPORTER_PIDFILE
+
+exec /usr/pgsql-18/bin/postgres -D /pgdata/ "$@"

@@ -28,15 +28,28 @@ if [ ! -f /pgdata/PG_VERSION ]; then
     export PG_DATABASE_ENCODING=${PG_DATABASE_ENCODING:-UTF8}
     export PG_USER_NAME=${PG_USER_NAME}
     export PG_USER_PASSWORD=${PG_USER_PASSWORD}
+    export PG_REPLICATION_NAME=${PG_REPLICATION_NAME}
+    export PG_REPLICATION_PASSWORD=${PG_REPLICATION_PASSWORD}
+    export PG_BACKUP_NAME=${PG_BACKUP_NAME}
+    export PG_BACKUP_PASSWORD=${PG_BACKUP_PASSWORD}
+    export PG_BACKUP_SLOT=${PG_BACKUP_SLOT}
     export PG_NETWORK_MASK=${PG_NETWORK_MASK}
+
+    export PG_REPLICA1=${PG_REPLICA1:-replica1}
+    export PG_REPLICA2=${PG_REPLICA2:-replica2}
+    export PG_REPLICA3=${PG_REPLICA3:-replica3}
+    export PG_REPLICA4=${PG_REPLICA4:-replica4}
+    export PG_REPLICA5=${PG_REPLICA5:-replica5}
 
     if [ -z "${PG_DATABASE}" ] ||
        [ -z "${PG_USER_NAME}" ] || [ -z "${PG_USER_PASSWORD}" ] ||
+       [ -z "${PG_REPLICATION_NAME}" ] || [ -z "${PG_REPLICATION_PASSWORD}" ] ||
+       [ -z "${PG_BACKUP_NAME}" ] || [ -z "${PG_BACKUP_PASSWORD}" ] || [ -z "${PG_BACKUP_SLOT}" ] ||
        [ -z "${PG_NETWORK_MASK}" ]; then
-        echo "PG_DATABASE, PG_USER_NAME, PG_USER_PASSWORD and PG_NETWORK_MASK needs to be defined."
+        echo "PG_DATABASE, PG_USER_NAME, PG_USER_PASSWORD, PG_REPLICATION_NAME, PG_REPLICATION_PASSWORD, PG_BACKUP_NAME, PG_BACKUP_PASSWORD, PG_BACKUP_SLOT and PG_NETWORK_MASK needs to be defined."
         exit 1
     fi
-    
+
     /usr/pgsql-18/bin/initdb -k -X /pgwal/ -D /pgdata/ --locale-provider=icu --icu-locale=en-US
 
     sed -i "s|PG_MAX_CONNECTIONS|$PG_MAX_CONNECTIONS|g" /conf/postgresql.conf
@@ -49,6 +62,8 @@ if [ ! -f /pgdata/PG_VERSION ]; then
 
     sed -i "s|PG_DATABASE|$PG_DATABASE|g" /conf/pg_hba.conf
     sed -i "s|PG_USER_NAME|$PG_USER_NAME|g" /conf/pg_hba.conf
+    sed -i "s|PG_REPLICATION_NAME|$PG_REPLICATION_NAME|g" /conf/pg_hba.conf
+    sed -i "s|PG_BACKUP_NAME|$PG_BACKUP_NAME|g" /conf/pg_hba.conf
     sed -i "s|PG_NETWORK_MASK|$PG_NETWORK_MASK|g" /conf/pg_hba.conf
     sed -i "s|PG_PASSWORD_ENCRYPTION|$PG_PASSWORD_ENCRYPTION|g" /conf/pg_hba.conf
 
@@ -59,9 +74,21 @@ if [ ! -f /pgdata/PG_VERSION ]; then
     sed -i "s|PG_DATABASE|$PG_DATABASE|g" /conf/setup.sql
     sed -i "s|PG_USER_NAME|$PG_USER_NAME|g" /conf/setup.sql
     sed -i "s|PG_USER_PASSWORD|$PG_USER_PASSWORD|g" /conf/setup.sql
+    sed -i "s|PG_REPLICATION_NAME|$PG_REPLICATION_NAME|g" /conf/setup.sql
+    sed -i "s|PG_REPLICATION_PASSWORD|$PG_REPLICATION_PASSWORD|g" /conf/setup.sql
+    sed -i "s|PG_BACKUP_NAME|$PG_BACKUP_NAME|g" /conf/setup.sql
+    sed -i "s|PG_BACKUP_PASSWORD|$PG_BACKUP_PASSWORD|g" /conf/setup.sql
 
     /usr/pgsql-18/bin/pg_ctl -D /pgdata/ start
     /usr/pgsql-18/bin/psql -q -f /conf/setup.sql postgres
+
+    /usr/pgsql-18/bin/psql -q -c "SELECT pg_create_physical_replication_slot('$PG_REPLICA1');" postgres
+    /usr/pgsql-18/bin/psql -q -c "SELECT pg_create_physical_replication_slot('$PG_REPLICA2');" postgres
+    /usr/pgsql-18/bin/psql -q -c "SELECT pg_create_physical_replication_slot('$PG_REPLICA3');" postgres
+    /usr/pgsql-18/bin/psql -q -c "SELECT pg_create_physical_replication_slot('$PG_REPLICA4');" postgres
+    /usr/pgsql-18/bin/psql -q -c "SELECT pg_create_physical_replication_slot('$PG_REPLICA5');" postgres
+    /usr/pgsql-18/bin/psql -q -c "SELECT pg_create_physical_replication_slot('$PG_BACKUP_SLOT');" postgres
+
     /usr/pgsql-18/bin/pg_ctl -D /pgdata/ stop
 fi
 

@@ -25,6 +25,11 @@ podman exec -it postgresql-primary /usr/bin/bash
 | PG_DATABASE | | | Yes | The name of the database |
 | PG_USER_NAME | | | Yes | The user name |
 | PG_USER_PASSWORD | | | Yes | The password for the user |
+| PG_REPLICATION_NAME | | | Yes | The replication user name |
+| PG_REPLICATION_PASSWORD | | | Yes | The password for the replication user |
+| PG_BACKUP_NAME | | | Yes | The backup user name |
+| PG_BACKUP_PASSWORD | | | Yes | The password for the backup user |
+| PG_BACKUP_SLOT | backup | | | The backup replication slot name |
 | PG_NETWORK_MASK | | | Yes | The network mask for database access |
 | PG_DATABASE_ENCODING | UTF8 | | | The encoding of the database |
 | PG_MAX_CONNECTIONS | 100 | | | `max_connections` setting |
