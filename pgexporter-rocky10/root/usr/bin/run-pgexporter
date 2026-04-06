@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+# Eclipse Public License - v 2.0
+#
+# THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF THIS ECLIPSE
+# PUBLIC LICENSE ("AGREEMENT"). ANY USE, REPRODUCTION OR DISTRIBUTION
+# OF THE PROGRAM CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
+#
+
+NODE_EXPORTER_PIDFILE=/tmp/node_exporter.pid
+
+function trap_sigterm() {
+    echo "Received SIGTERM, shutting down..."
+    kill -SIGINT $(head -1 $NODE_EXPORTER_PIDFILE)
+}
+
+trap 'trap_sigterm' SIGINT SIGTERM
+
+if [ ! -f /pgexporter/pgexporter.conf ]; then
+    echo "First run: Setting up pgexporter..."
+
+    required_vars=("PG_PRIMARY_NAME" "PG_PRIMARY_PORT" "PG_EXPORTER_NAME" "PG_EXPORTER_PASSWORD")
+    for var in "${required_vars[@]}"; do
+        if [ -z "${!var}" ]; then
+            echo "ERROR: $var is not set!"
+            exit 1
+        fi
+    done
+
+    cp /conf/pgexporter.conf /tmp/pgexporter.conf.tmp
+
+    sed -i "s/PG_PRIMARY_NAME/$PG_PRIMARY_NAME/g" /tmp/pgexporter.conf.tmp
+    sed -i "s/PG_PRIMARY_PORT/$PG_PRIMARY_PORT/g" /tmp/pgexporter.conf.tmp
+    sed -i "s/PG_EXPORTER_NAME/$PG_EXPORTER_NAME/g" /tmp/pgexporter.conf.tmp
+
+    if [ -f /pgconf/root.crt ] && [ -f /pgconf/server.crt ] && [ -f /pgconf/server.key ]; then
+        echo "Enabling TLS..."
+        sed -i "s/#tls = off/tls = on/g" /tmp/pgexporter.conf.tmp
+
+        cp /pgconf/root.crt /pgexporter/
+        cp /pgconf/server.crt /pgexporter/
+        cp /pgconf/server.key /pgexporter/
+        chmod 0600 /pgexporter/server.key
+    fi
+
+    mv /tmp/pgexporter.conf.tmp /pgexporter/pgexporter.conf
+
+    echo "Initializing pgexporter..."
+    pgexporter-admin -g master-key
+    pgexporter-admin -f /pgexporter/pgexporter_users.conf -U ${PG_EXPORTER_NAME} -P ${PG_EXPORTER_PASSWORD} user add
+
+    echo "Setup complete!"
+fi
+
+echo "Starting Node Exporter..."
+/usr/local/bin/node_exporter >> /tmp/node_exporter.log 2>&1 &
+echo $! > $NODE_EXPORTER_PIDFILE
+
+echo "Starting pgexporter..."
+exec pgexporter -c /pgexporter/pgexporter.conf -u /pgexporter/pgexporter_users.conf "$@"
