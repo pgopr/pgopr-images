@@ -45,6 +45,9 @@ VOLUME ["/pgconf", "/pgdata", "/pgwal"]
 EXPOSE 5432
 EXPOSE 9100
 
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
+  CMD /usr/pgsql-18/bin/pg_isready -q || exit 1
+
 USER 26
 
 CMD ["/usr/bin/run-postgresql"]

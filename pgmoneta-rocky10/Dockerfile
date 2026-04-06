@@ -42,6 +42,10 @@ RUN cd /tmp \
 VOLUME ["/pgconf","/pgmoneta"]
 EXPOSE 5001
 EXPOSE 9100
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
+  CMD pgmoneta-cli -c /pgmoneta/pgmoneta.conf ping || exit 1
+
 USER pgmoneta
 WORKDIR /home/pgmoneta
 CMD ["/usr/bin/run-pgmoneta"]
