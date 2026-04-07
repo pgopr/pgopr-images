@@ -1,0 +1,78 @@
+#!/bin/bash
+#
+# Eclipse Public License - v 2.0
+#
+# THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF THIS ECLIPSE
+# PUBLIC LICENSE ("AGREEMENT"). ANY USE, REPRODUCTION OR DISTRIBUTION
+# OF THE PROGRAM CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
+#
+
+NODE_EXPORTER_PIDFILE=/tmp/node_exporter.pid
+
+function trap_sigterm() {
+    echo "Received SIGTERM, shutting down..."
+    kill -SIGINT $(head -1 $NODE_EXPORTER_PIDFILE)
+}
+
+trap 'trap_sigterm' SIGINT SIGTERM
+
+if [ ! -f /pgagroal/pgagroal.conf ]; then
+    echo "First run: Setting up pgagroal..."
+
+    export PG_MAX_CONNECTIONS=${PG_MAX_CONNECTIONS:-100}
+    export PG_IDLE_TIMEOUT=${PG_IDLE_TIMEOUT:-0}
+    export PG_VALIDATION=${PG_VALIDATION:-off}
+
+    required_vars=("PG_PRIMARY_NAME" "PG_PRIMARY_PORT" "PG_USER_NAME" "PG_USER_PASSWORD" "PG_DATABASE" "PG_NETWORK_MASK")
+    for var in "${required_vars[@]}"; do
+        if [ -z "${!var}" ]; then
+            echo "ERROR: $var is not set!"
+            exit 1
+        fi
+    done
+
+    cp /conf/pgagroal.conf /tmp/pgagroal.conf.tmp
+
+    sed -i "s/PG_MAX_CONNECTIONS/$PG_MAX_CONNECTIONS/g" /tmp/pgagroal.conf.tmp
+    sed -i "s/PG_IDLE_TIMEOUT/$PG_IDLE_TIMEOUT/g" /tmp/pgagroal.conf.tmp
+    sed -i "s/PG_VALIDATION/$PG_VALIDATION/g" /tmp/pgagroal.conf.tmp
+
+    sed -i "s/PG_PRIMARY_NAME/$PG_PRIMARY_NAME/g" /tmp/pgagroal.conf.tmp
+    sed -i "s/PG_PRIMARY_PORT/$PG_PRIMARY_PORT/g" /tmp/pgagroal.conf.tmp
+
+    if [ -f /pgconf/root.crt ] && [ -f /pgconf/server.crt ] && [ -f /pgconf/server.key ]; then
+        echo "Enabling TLS..."
+        sed -i "s/tls = off/tls = on/g" /tmp/pgagroal.conf.tmp
+
+        cp /pgconf/root.crt /pgagroal/
+        cp /pgconf/server.crt /pgagroal/
+        cp /pgconf/server.key /pgagroal/
+        chmod 0600 /pgagroal/server.key
+    fi
+
+    touch /pgagroal/pgagroal_hba.conf
+    touch /pgagroal/pgagroal_databases.conf
+
+    if [ -f /pgconf/root.crt ] && [ -f /pgconf/server.crt ] && [ -f /pgconf/server.key ]; then
+        echo "hostssl ${PG_DATABASE} ${PG_USER_NAME} ${PG_NETWORK_MASK} scram-sha-256" >> /pgagroal/pgagroal_hba.conf
+    else
+        echo "host ${PG_DATABASE} ${PG_USER_NAME} ${PG_NETWORK_MASK} scram-sha-256" >> /pgagroal/pgagroal_hba.conf
+    fi
+
+    echo "${PG_DATABASE} ${PG_USER_NAME} all" >> /pgagroal/pgagroal_databases.conf
+
+    mv /tmp/pgagroal.conf.tmp /pgagroal/pgagroal.conf
+
+    echo "Initializing pgagroal..."
+    pgagroal-admin -g master-key
+    pgagroal-admin -f /pgagroal/pgagroal_users.conf -U ${PG_USER_NAME} -P ${PG_USER_PASSWORD} user add
+
+    echo "Setup complete!"
+fi
+
+echo "Starting Node Exporter..."
+/usr/local/bin/node_exporter >> /tmp/node_exporter.log 2>&1 &
+echo $! > $NODE_EXPORTER_PIDFILE
+
+echo "Starting pgagroal..."
+exec pgagroal -c /pgagroal/pgagroal.conf -a /pgagroal/pgagroal_hba.conf -u /pgagroal/pgagroal_users.conf -l /pgagroal/pgagroal_databases.conf "$@"
