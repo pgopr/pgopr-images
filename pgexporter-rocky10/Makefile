@@ -7,6 +7,9 @@
 #
 IMAGE_NAME = pgexporter-rocky10
 
-.PHONY: build
+.PHONY: build clean
 build:
 	podman build --no-cache -t $(IMAGE_NAME) .
+
+clean:
+	podman rmi -f $(IMAGE_NAME) 2>/dev/null || true

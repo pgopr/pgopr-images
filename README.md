@@ -14,6 +14,26 @@ The images makes use of
 Images are provided **`AS IS`** according to the license agreement with
 no guarantees of correctness and stability.
 
+## Building
+
+Build all images and install them locally:
+
+```
+make build
+```
+
+Build a single image:
+
+```
+make pgsql18-primary-rocky10
+```
+
+Remove all images:
+
+```
+make clean
+```
+
 ## License
 
 All images are released under the [Eclipse Public License - v2.0](https://www.eclipse.org/legal/epl-2.0/)
