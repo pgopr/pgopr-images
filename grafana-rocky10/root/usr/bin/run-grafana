@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+# Eclipse Public License - v 2.0
+#
+# THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF THIS ECLIPSE
+# PUBLIC LICENSE ("AGREEMENT"). ANY USE, REPRODUCTION OR DISTRIBUTION
+# OF THE PROGRAM CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
+#
+
+NODE_EXPORTER_PIDFILE=/tmp/node_exporter.pid
+PROMETHEUS_PIDFILE=/tmp/prometheus.pid
+
+function trap_sigterm() {
+    echo "Received SIGTERM, shutting down..."
+    kill -SIGINT $(head -1 $NODE_EXPORTER_PIDFILE)
+    kill -SIGINT $(head -1 $PROMETHEUS_PIDFILE)
+}
+
+trap 'trap_sigterm' SIGINT SIGTERM
+
+echo "Starting Node Exporter..."
+/usr/local/bin/node_exporter >> /tmp/node_exporter.log 2>&1 &
+echo $! > $NODE_EXPORTER_PIDFILE
+
+echo "Starting Prometheus..."
+/usr/local/bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/var/lib/prometheus >> /tmp/prometheus.log 2>&1 &
+echo $! > $PROMETHEUS_PIDFILE
+
+echo "Starting Grafana..."
+exec /usr/sbin/grafana-server --homepath=/usr/share/grafana --config=/etc/grafana/grafana.ini "$@"

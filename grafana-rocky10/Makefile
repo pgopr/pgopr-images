@@ -1,0 +1,15 @@
+#
+# Eclipse Public License - v 2.0
+#
+# THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF THIS ECLIPSE
+# PUBLIC LICENSE ("AGREEMENT"). ANY USE, REPRODUCTION OR DISTRIBUTION
+# OF THE PROGRAM CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
+#
+IMAGE_NAME = grafana-rocky10
+
+.PHONY: build clean
+build:
+	podman build --no-cache -t $(IMAGE_NAME) .
+
+clean:
+	podman rmi -f $(IMAGE_NAME) 2>/dev/null || true

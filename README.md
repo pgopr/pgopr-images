@@ -7,6 +7,8 @@ The images makes use of
 * [Rocky Linux](https://www.rockylinux.org) 10.x
 * [PostgreSQL](https://www.postgresql.org) 18.x
 * [pgmoneta](https://pgmoneta.github.io)
+* [Grafana](https://grafana.com/)
+* [Prometheus](https://prometheus.io/)
 * Community provided RPMs through [yum.postgresql.org](https://yum.postgresql.org)
 * Checksum for `PGDATA`
 * SCRAM-SHA256 password encryption by default
