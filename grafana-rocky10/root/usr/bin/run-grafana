@@ -18,6 +18,15 @@ function trap_sigterm() {
 
 trap 'trap_sigterm' SIGINT SIGTERM
 
+echo "Configuring Prometheus scrape target from env..."
+PROMETHEUS_CONFIG=/etc/prometheus/prometheus.yml
+if [ -n "$PGEXPORTER_SERVICE_HOST" ] && [ -n "$PGEXPORTER_SERVICE_PORT" ]; then
+    sed -i "s/__PGEXPORTER_HOST__/${PGEXPORTER_SERVICE_HOST}/g" "$PROMETHEUS_CONFIG"
+    sed -i "s/__PGEXPORTER_PORT__/${PGEXPORTER_SERVICE_PORT}/g" "$PROMETHEUS_CONFIG"
+else
+    echo "WARNING: PGEXPORTER_SERVICE_HOST or PGEXPORTER_SERVICE_PORT not set"
+fi
+
 echo "Starting Node Exporter..."
 /usr/local/bin/node_exporter >> /tmp/node_exporter.log 2>&1 &
 echo $! > $NODE_EXPORTER_PIDFILE
