@@ -21,7 +21,6 @@ RUN dnf -y update \
  && dnf -y install grafana \
  && dnf -y clean all
 
-RUN useradd -ms /bin/bash grafana
 
 COPY root/ /
 RUN chmod +x /usr/bin/run-grafana
@@ -44,12 +43,15 @@ RUN cd /tmp \
  && rm -rf /tmp/prometheus* \
  && chown -R grafana:grafana /usr/local/bin/node_exporter /etc/prometheus /var/lib/prometheus /usr/local/bin/prometheus /usr/local/bin/promtool
 
+RUN chown -R grafana:grafana /usr/share/grafana
+
 EXPOSE 3000
 EXPOSE 9090
 EXPOSE 9100
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:3000/api/health || exit 1
+
 
 USER grafana
 WORKDIR /usr/share/grafana
