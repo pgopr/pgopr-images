@@ -5,11 +5,20 @@
 # PUBLIC LICENSE ("AGREEMENT"). ANY USE, REPRODUCTION OR DISTRIBUTION
 # OF THE PROGRAM CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
 #
-IMAGE_NAME = pgmoneta-rocky10
+IMAGES = \
+	pgexporter-rocky10 \
+	pgmoneta-rocky10 \
+	pgsql18-primary-rocky10 \
+	pgsql18-replica-rocky10
 
-.PHONY: build clean
-build:
-	podman build --no-cache -t $(IMAGE_NAME) .
+.PHONY: build clean $(IMAGES)
+
+build: $(IMAGES)
+
+$(IMAGES):
+	$(MAKE) -C $@ build
 
 clean:
-	podman rmi -f $(IMAGE_NAME) 2>/dev/null || true
+	@for img in $(IMAGES); do \
+		$(MAKE) -C $$img clean; \
+	done
