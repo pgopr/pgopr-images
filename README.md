@@ -9,6 +9,7 @@ The images makes use of
 * [pgmoneta](https://pgmoneta.github.io)
 * [Grafana](https://grafana.com/)
 * [Prometheus](https://prometheus.io/)
+* [pgopr](https://pgopr.github.io/)
 * Community provided RPMs through [yum.postgresql.org](https://yum.postgresql.org)
 * Checksum for `PGDATA`
 * SCRAM-SHA256 password encryption by default
